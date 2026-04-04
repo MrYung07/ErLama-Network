@@ -1,10 +1,9 @@
-require('dotenv').config();
-
 const { REST, Routes } = require('discord.js');
+require('dotenv').config();
 const fs = require('fs');
 
 const commands = [];
-const commandFiles = fs.readdirSync('./commands').filter(f => f.endsWith('.js'));
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
@@ -16,10 +15,10 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
   try {
-    console.log(`🚀 Registrazione ${commands.length} comandi globali...`);
+    console.log('🚀 Deploy comandi...');
 
     await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
+      Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
       { body: commands }
     );
 
