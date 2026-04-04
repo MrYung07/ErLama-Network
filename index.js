@@ -31,6 +31,7 @@ client.once('clientReady', () => {
   });
 });
 
+
 client.on('interactionCreate', async interaction => {
   if (!interaction.isStringSelectMenu()) return;
 
@@ -57,6 +58,7 @@ client.on('interactionCreate', async interaction => {
   if (added.length) replyMessage += `✅ Ruoli aggiunti: ${added.join(', ')}\n`;
   if (removed.length) replyMessage += `⚠ Ruoli rimossi: ${removed.join(', ')}`;
 
+  await interaction.reply({ content: replyMessage || 'Nessuna modifica ai ruoli.', flags: 64 });
 });
 
 client.on('interactionCreate', async interaction => {
@@ -164,7 +166,31 @@ if (!activeTickets) {
   }
 });
 
+client.on('guildMemberAdd', member => {
+const fs = require('fs');
+const { EmbedBuilder } = require('discord.js');
 
+client.on('guildMemberAdd', async member => {
+  const config = JSON.parse(fs.readFileSync('./welcomeConfig.json'));
+
+  const guildConfig = config[member.guild.id];
+  if (!guildConfig) return;
+
+  const channel = member.guild.channels.cache.get(guildConfig.channelId);
+  if (!channel) return;
+
+  const avatar = member.user.displayAvatarURL({ extension: 'png' });
+
+  const embed = new EmbedBuilder()
+    .setTitle('👋 Benvenuto!')
+    .setDescription(`Benvenuto ${member} sel server`)
+    .setThumbnail(avatar)
+    .setColor('Blue');
+
+  channel.send({ embeds: [embed] });
+});
+  const channel = member.guild.channels.cache.get('1451617430618247310');
+});
 // LOGIN
 require('dotenv').config();
 client.login(process.env.TOKEN);
