@@ -20,8 +20,8 @@ const guildConfig = {
   "1451613622160855184": { CATEGORY_ID: "1451673471858901174", STAFF_ROLE_ID: "1480500805617451090" }
 };
 
-client.once('ready', () => {
-client.on('clientReady', () => console.log("Bot online"));
+client.once('clientReady', () => {
+  console.log(`✅ Bot online come ${client.user.tag}`);
 
   client.user.setPresence({
     activities: [{
