@@ -16,7 +16,6 @@ const ticketsPerGuild = new Map(); // key = guildId, value = Map(userId -> chann
 
 // CONFIG SERVER: metti qui per ogni server ID i ruoli e categorie
 const guildConfig = {
-  "1487197653556002956": { CATEGORY_ID: "1489278723969519858", STAFF_ROLE_ID: "1487239355578716397" },
   "1451613622160855184": { CATEGORY_ID: "1451673471858901174", STAFF_ROLE_ID: "1480500805617451090" }
 };
 
@@ -95,36 +94,7 @@ client.on('interactionCreate', async interaction => {
   });
 });
 
-client.on('interactionCreate', async interaction => {
 
-  if (!interaction.isStringSelectMenu()) return;
-  if (interaction.customId !== 'select_roles_multiguild') return;
-
-  const selectedRoles = interaction.values;
-  const member = interaction.member;
-
-  let added = [];
-  let removed = [];
-
-  for (const roleId of selectedRoles) {
-    const role = interaction.guild.roles.cache.get(roleId);
-    if (!role) continue;
-
-    if (member.roles.cache.has(roleId)) {
-      await member.roles.remove(roleId);
-      removed.push(role.name);
-    } else {
-      await member.roles.add(roleId);
-      added.push(role.name);
-    }
-  }
-
-  let replyMessage = '';
-  if (added.length) replyMessage += `✅ Ruoli aggiunti: ${added.join(', ')}\n`;
-  if (removed.length) replyMessage += `⚠ Ruoli rimossi: ${removed.join(', ')}`;
-
-  await interaction.reply({ content: replyMessage || 'Nessuna modifica ai ruoli.', flags: 64 });
-});
 // EVENTO INTERACTION
 client.on('interactionCreate', async interaction => {
 
