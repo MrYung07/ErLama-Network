@@ -191,6 +191,6 @@ client.on('guildMemberAdd', async member => {
 });
   const channel = member.guild.channels.cache.get('1451617430618247310');
 });
-// LOGIN
+// LOGINn
 require('dotenv').config();
 client.login(process.env.TOKEN);
