@@ -1,102 +1,39 @@
-const { Client, GatewayIntentBits, Collection, PermissionsBitField, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, PermissionsBitField, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const fs = require('fs');
-// CREAZIONE CLIENT
-const client = new Client({   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages,GatewayIntentBits.MessageContent,GatewayIntentBits.GuildMembers,] });
-client.commands = new Collection();
+require('dotenv').config();
 
-// CARICAMENTO COMANDI
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ]
+});
+
+client.commands = new Collection();
+const commandFiles = fs.readdirSync('./commands').filter(f => f.endsWith('.js'));
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
-  client.commands.set(command.data.name, command);
+  if (command.data) client.commands.set(command.data.name, command);
 }
 
-// TICKET PER SERVER
-const ticketsPerGuild = new Map(); // key = guildId, value = Map(userId -> channelId)
-
-// CONFIG SERVER: metti qui per ogni server ID i ruoli e categorie
+// Ticket system
+const ticketsPerGuild = new Map(); // guildId -> Map(userId -> channelId)
 const guildConfig = {
   "1451613622160855184": { CATEGORY_ID: "1451673471858901174", STAFF_ROLE_ID: "1480500805617451090" }
 };
 
+// Ready
 client.once('clientReady', () => {
   console.log(`✅ Bot online come ${client.user.tag}`);
-
   client.user.setPresence({
-    activities: [{
-      name: '/help | ErLama 🎫🤖',
-      type: 3 // 0 = Giocando, 1 = Streaming, 2 = Ascoltando, 3 = Guardando
-    }],
+    activities: [{ name: '/help | ErLama 🎫🤖', type: 3 }],
     status: 'online'
   });
 });
 
-
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isStringSelectMenu()) return;
-
-  const member = interaction.member;
-  const selectedRoles = interaction.values;
-
-  let added = [];
-  let removed = [];
-
-  for (const roleId of selectedRoles) {
-    const role = interaction.guild.roles.cache.get(roleId);
-    if (!role) continue;
-
-    if (member.roles.cache.has(roleId)) {
-      await member.roles.remove(roleId);
-      removed.push(role.name);
-    } else {
-      await member.roles.add(roleId);
-      added.push(role.name);
-    }
-  }
-
-  let replyMessage = '';
-  if (added.length) replyMessage += `✅ Ruoli aggiunti: ${added.join(', ')}\n`;
-  if (removed.length) replyMessage += `⚠ Ruoli rimossi: ${removed.join(', ')}`;
-
-  await interaction.reply({ content: replyMessage || 'Nessuna modifica ai ruoli.', flags: 64 });
-});
-
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isStringSelectMenu()) return;
-
-  if (!interaction.customId.startsWith('autorole_')) return;
-
-  const member = interaction.member;
-  const selectedRoles = interaction.values;
-
-  let added = [];
-  let removed = [];
-
-  for (const roleId of selectedRoles) {
-    const role = interaction.guild.roles.cache.get(roleId);
-    if (!role) continue;
-
-    if (member.roles.cache.has(roleId)) {
-      await member.roles.remove(roleId);
-      removed.push(role.name);
-    } else {
-      await member.roles.add(roleId);
-      added.push(role.name);
-    }
-  }
-
-  let msg = '';
-  if (added.length) msg += `✅ Aggiunti: ${added.join(', ')}\n`;
-  if (removed.length) msg += `⚠ Rimossi: ${removed.join(', ')}`;
-
-  await interaction.reply({
-    content: msg || 'Nessuna modifica.',
-    flags: 64
-  });
-});
-
-
-// EVENTO INTERACTION
+// Interaction handler unico
 client.on('interactionCreate', async interaction => {
 
   // SLASH COMMAND
@@ -107,29 +44,37 @@ client.on('interactionCreate', async interaction => {
     catch (err) { console.error(err); await interaction.reply({ content: 'Errore!', ephemeral: true }); }
   }
 
-let activeTickets = ticketsPerGuild.get(interaction.guild.id);
-if (!activeTickets) {
-  activeTickets = new Map();
-  ticketsPerGuild.set(interaction.guild.id, activeTickets);
-}
-  // MENU SELECT TICKET
-  if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_select') {
+  // SELECT MENU - Autorole
+  if (interaction.isStringSelectMenu() && interaction.customId.startsWith('autorole_')) {
+    const member = interaction.member;
+    const added = [], removed = [];
+    for (const roleId of interaction.values) {
+      const role = interaction.guild.roles.cache.get(roleId);
+      if (!role) continue;
+      if (member.roles.cache.has(roleId)) { await member.roles.remove(roleId); removed.push(role.name); }
+      else { await member.roles.add(roleId); added.push(role.name); }
+    }
+    let msg = '';
+    if (added.length) msg += `✅ Aggiunti: ${added.join(', ')}\n`;
+    if (removed.length) msg += `⚠ Rimossi: ${removed.join(', ')}`;
+    await interaction.reply({ content: msg || 'Nessuna modifica.', ephemeral: true });
+  }
 
+  // SELECT MENU - Ticket
+  if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_select') {
     const config = guildConfig[interaction.guild.id];
     if (!config) return interaction.reply({ content: "Server non configurato.", ephemeral: true });
-
     let tickets = ticketsPerGuild.get(interaction.guild.id);
     if (!tickets) { tickets = new Map(); ticketsPerGuild.set(interaction.guild.id, tickets); }
 
-    if (tickets.has(interaction.user.id)) {
+    if (tickets.has(interaction.user.id))
       return interaction.reply({ content: "Hai già un ticket aperto!", ephemeral: true });
-    }
 
     const tipo = interaction.values[0];
-    let nomeTipo = tipo === "support" ? "supporto" : tipo;
-    let descrizione = tipo === "support" ? "🛠️ Supporto: descrivi il problema." :
-                      tipo === "Partnership" ? "🤝 Partnership : Nel mentre che aspetti un staff dici quanti membri ha il tuo server." :
-                      "🛠️ Candidatura Staff: indica qui le tue qualita";
+    const nomeTipo = tipo === "support" ? "supporto" : tipo;
+    const descrizione = tipo === "support" ? "🛠️ Supporto: descrivi il problema." :
+      tipo === "Partnership" ? "🤝 Partnership: indica quanti membri ha il tuo server." :
+      "🛠️ Candidatura Staff: indica le tue qualità";
 
     const channel = await interaction.guild.channels.create({
       name: `${nomeTipo}-${interaction.user.username}`,
@@ -146,29 +91,24 @@ if (!activeTickets) {
 
     const closeBtn = new ButtonBuilder().setCustomId('close_ticket').setLabel('Chiudi Ticket').setStyle(ButtonStyle.Danger);
     const row = new ActionRowBuilder().addComponents(closeBtn);
-
     const embed = new EmbedBuilder().setTitle(`🎫 Ticket ${nomeTipo}`).setDescription(descrizione).setColor('Green');
-
     await channel.send({ content: `${interaction.user}`, embeds: [embed], components: [row] });
     await interaction.reply({ content: `✅ Ticket creato: ${channel}`, ephemeral: true });
   }
 
-  // BOTTONI CHIUSURA
+  // BUTTON - Close Ticket
   if (interaction.isButton() && interaction.customId === 'close_ticket') {
     const tickets = ticketsPerGuild.get(interaction.guild.id);
     if (!tickets) return;
-
     const userId = [...tickets.entries()].find(([_, id]) => id === interaction.channel.id)?.[0];
     if (userId) tickets.delete(userId);
-
     await interaction.reply({ content: '🔒 Chiusura ticket in 3 secondi...', ephemeral: true });
     setTimeout(() => interaction.channel.delete(), 3000);
   }
 });
 
+// Welcome DM con URL valido
 client.on('guildMemberAdd', async member => {
-  const { EmbedBuilder } = require('discord.js');
-
   const config = JSON.parse(fs.readFileSync('./welcomeConfig.json'));
   const guildConfig = config[member.guild.id];
   if (!guildConfig) return;
@@ -176,19 +116,18 @@ client.on('guildMemberAdd', async member => {
   const channel = member.guild.channels.cache.get(guildConfig.channelId);
   if (!channel) return;
 
-const background = "https://image2url.com/r2/default/images/1775389122263-7baed56e-97e8-4aa2-9b3b-3bc34e0a7436.blob";
-const avatar = member.user.displayAvatarURL({ extension: 'png', size: 512 });
+  const background = "https://image2url.com/r2/default/images/1775389122263-7baed56e-97e8-4aa2-9b3b-3bc34e0a7436.blob"; // URL valido
+  const avatar = member.user.displayAvatarURL({ extension: 'png', size: 512 });
+  const image = `https://api.popcat.xyz/welcomecard?background=${encodeURIComponent(background)}&avatar=${encodeURIComponent(avatar)}&text1=${encodeURIComponent(member.user.username)}&text2=${encodeURIComponent("Benvenuto!")}&text3=${encodeURIComponent(`Membri: ${member.guild.memberCount}`)}`;
 
-const image = `https://api.popcat.xyz/welcomecard?background=${encodeURIComponent(background)}&avatar=${encodeURIComponent(avatar)}&text1=${encodeURIComponent(member.user.username)}&text2=${encodeURIComponent("Benvenuto!")}&text3=${encodeURIComponent(`Membri: ${member.guild.memberCount}`)}`;
-  
-    const embed = new EmbedBuilder()
-    .setTitle('**👋 Benvenuto/a in 🇮🇹 ErLama Network 🇮🇹**')
-    .setDescription(`Ciao ${member}, benvenuto! nel server ti ricoldo di <#1476972204934692965>`)
+  const embed = new EmbedBuilder()
+    .setTitle('👋 Benvenuto/a in 🇮🇹 ErLama Network 🇮🇹')
+    .setDescription(`Ciao ${member}, benvenuto! nel server ti ricordo di <#1476972204934692965>`)
     .setImage(image)
     .setColor('Blue');
 
-  channel.send({ embeds: [embed] });
+  await channel.send({ embeds: [embed] });
+  try { await member.send({ embeds: [embed] }); } catch(err){ console.log(`Non posso inviare DM a ${member.user.tag}`);}
 });
-// LOGIN
-require('dotenv').config();
+
 client.login(process.env.TOKEN);
