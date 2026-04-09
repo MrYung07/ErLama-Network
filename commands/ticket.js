@@ -16,7 +16,7 @@ module.exports = {
         🛠️ **Candidatura Staff**
         `)
         .setColor('Blue')
-        .setFooter({ text: `Bot Sviluppato da Yung Network | 🇮🇹 ErLama Network 🇮🇹`}); 
+        .setFooter({ text: `Bot Sviluppato da Yung Network`}); 
 
     const menu = new StringSelectMenuBuilder()
       .setCustomId('ticket_select')
