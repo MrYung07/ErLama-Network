@@ -60,7 +60,7 @@ if (interaction.isModalSubmit() && interaction.customId === 'partner_modal') {
       `📢 **Partner Richiesta da:** ${menzione}\n\n` +
       `🤝 **Fatta da:** ${interaction.user}`
     )
-    .setColor('Purple')
+    .setColor('Blue')
     .setTimestamp();
 
   await interaction.reply({
