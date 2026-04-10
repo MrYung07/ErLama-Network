@@ -57,7 +57,7 @@ if (interaction.isModalSubmit() && interaction.customId === 'partner_modal') {
     .setDescription(
       `📝 **Descrizione:**\n${bio}\n\n` +
       `🔗 **Invito:** ${invito}\n\n` +
-      `📢 **Partner fatta con:** ${menzione}\n\n` +
+      `📢 **Partner Richiesta da:** ${menzione}\n\n` +
       `🤝 **Fatta da:** ${interaction.user}`
     )
     .setColor('Purple')
