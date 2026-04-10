@@ -44,6 +44,32 @@ client.on('interactionCreate', async interaction => {
     catch (err) { console.error(err); await interaction.reply({ content: 'Errore!', ephemeral: true }); }
   }
 
+// 📩 MODAL PARTNER
+if (interaction.isModalSubmit() && interaction.customId === 'partner_modal') {
+
+  const nome = interaction.fields.getTextInputValue('nome');
+  const menzione = interaction.fields.getTextInputValue('menzione');
+  const bio = interaction.fields.getTextInputValue('bio');
+  const invito = interaction.fields.getTextInputValue('invito');
+
+  const embed = new EmbedBuilder()
+    .setTitle(`🤝 Partner con ${nome}`)
+    .setDescription(
+      `📝 **Descrizione:**\n${bio}\n\n` +
+      `🔗 **Invito:** ${invito}\n\n` +
+      `📢 **Partner fatta con:** ${menzione}\n\n` +
+      `🤝 **Fatta da:** ${interaction.user}`
+    )
+    .setColor('Purple')
+    .setTimestamp();
+
+  await interaction.reply({
+    content: '✅ Partner creato!',
+    ephemeral: true
+  });
+
+  await interaction.channel.send({ embeds: [embed] });
+}
   // SELECT MENU - Autorole
   if (interaction.isStringSelectMenu() && interaction.customId.startsWith('autorole_')) {
     const member = interaction.member;
